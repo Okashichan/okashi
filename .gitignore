@@ -11,3 +11,6 @@ devenv.local.yaml
 
 # JavaScript
 node_modules
+
+# CSS
+public/styles.css

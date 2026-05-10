@@ -11,6 +11,8 @@ COPY ./src ./src
 COPY ./public ./public
 COPY ./tsconfig.json ./tsconfig.json
 
+RUN bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --minify
+
 ENV NODE_ENV=production
 
 RUN bun build \
