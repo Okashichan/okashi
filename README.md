@@ -12,5 +12,5 @@ bun run dev
 ### Deploy
 
 > docker build -t okashi .
-
-> docker run -d --restart=always --name okashi-website -p 3000:3000 okashi
+> docker network create okashi-net
+> docker run -d --restart=always --name okashi-website --network okashi-net -p 6967:3000 okashi
