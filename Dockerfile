@@ -22,12 +22,17 @@ RUN bun build \
 	--outfile server \
 	src/index.ts
 
-FROM gcr.io/distroless/base
+FROM oven/bun:alpine
 
 WORKDIR /app
 
-COPY --from=build /app/server server
-COPY --from=build /app/public public
+RUN apk add --no-cache chafa
+
+ENV TERM=xterm-256color
+ENV COLORTERM=truecolor
+
+COPY --from=build /app/server ./server
+COPY --from=build /app/public ./public
 
 ENV NODE_ENV=production
 
