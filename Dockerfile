@@ -1,4 +1,4 @@
-FROM oven/bun AS build
+FROM oven/bun:alpine AS build
 
 WORKDIR /app
 
@@ -16,11 +16,11 @@ RUN bunx @tailwindcss/cli -i src/styles/input.css -o public/styles.css --minify
 ENV NODE_ENV=production
 
 RUN bun build \
-	--compile \
-	--minify-whitespace \
-	--minify-syntax \
-	--outfile server \
-	src/index.ts
+    --compile \
+    --minify-whitespace \
+    --minify-syntax \
+    --outfile server \
+    src/index.ts
 
 FROM oven/bun:alpine
 
