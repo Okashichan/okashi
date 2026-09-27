@@ -15,12 +15,6 @@ RUN bunx @tailwindcss/cli -i src/styles.css -o public/styles.css --minify
 
 ENV NODE_ENV=production
 
-RUN bun build \
-    --compile \
-    --minify-whitespace \
-    --minify-syntax \
-    --outfile server \
-    src/main.ts
 
 FROM oven/bun:alpine
 
@@ -31,11 +25,14 @@ RUN apk add --no-cache chafa
 ENV TERM=xterm-256color
 ENV COLORTERM=truecolor
 
-COPY --from=build /app/server ./server
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/src ./src
 COPY --from=build /app/public ./public
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 
 ENV NODE_ENV=production
 
 EXPOSE 3000
 
-CMD ["./server"]
+CMD ["bun", "run", "src/main.ts"]
