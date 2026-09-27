@@ -20,7 +20,7 @@ RUN bun build \
     --minify-whitespace \
     --minify-syntax \
     --outfile server \
-    src/index.ts
+    src/main.ts
 
 FROM oven/bun:alpine
 
