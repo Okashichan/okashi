@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia'
 import { Html } from '@elysia/html'
+import { getNowPlaying } from '../utils/lastfm'
 
 const nav = [
   { href: '/', label: 'Back', jp: '戻る' },
@@ -43,7 +44,14 @@ const konpeitoStyles = [
   { bg: '#B8E6A0', shadow: 'rgba(150, 210, 130, 0.5)', rotate: '-5deg', size: 135 },
 ]
 
-export const homeRoute = new Elysia().get('/home', () => {
+export const homeRoute = new Elysia().get('/home', async () => {
+  // Fetch initial now-playing data server-side
+  const nowPlaying = await getNowPlaying()
+  const initialArt = nowPlaying?.albumArt || '/public/images/noimage.png'
+  const isPlaying = nowPlaying?.isNowPlaying ?? false
+  const trackName = nowPlaying?.name || ''
+  const artistName = nowPlaying?.artist || ''
+
   return (
     <html lang="uk">
       <head>
@@ -263,6 +271,224 @@ export const homeRoute = new Elysia().get('/home', () => {
               font-size: 0.62rem;
             }
           }
+
+          /* ===== Vinyl Record ===== */
+          @keyframes spin-vinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+
+          .vinyl-container {
+            position: fixed;
+            z-index: 40;
+            width: 70px;
+            height: 70px;
+            /* Mobile (< 768px): overlay directly on illustration background.
+               Background starts at 52px, image height = min(100vw, 520px) * 0.72.
+               Fairies cluster at 59.5% width and ~75% of illustration height. */
+            top: calc(52px + min(100vw, 520px) * 0.72 * 0.60);
+            left: calc(49% + min(100vw, 520px) * 0.095);
+            transform: translateX(-50%);
+          }
+
+          @media (min-width: 768px) {
+            .vinyl-container {
+              position: absolute;
+              /* Scale size with illustration: ~120px on small screens, up to 200px on large desktop */
+              width: clamp(110px, min(100vh, 100vw * 0.6936) * 0.23, 200px);
+              height: clamp(110px, min(100vh, 100vw * 0.6936) * 0.23, 200px);
+              /* Anchor to illustration top (never viewport bottom!), so tall windows dont pull it down */
+              top: calc(min(100vh, 100vw * 0.6936) * 0.74);
+              bottom: auto;
+              /* Center offset matches the fairy cluster at 58.6% of illustration width */
+              left: calc(50vw + min(100vw, 100vh * 1.4417) * 0.086);
+              transform: translate(-50%, -50%);
+            }
+          }
+
+          .vinyl-record {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: filter 0.3s ease, box-shadow 0.3s ease;
+          }
+
+          .vinyl-record:hover {
+            filter: brightness(1.08);
+            box-shadow: 0 0 24px rgba(0,0,0,0.25);
+          }
+
+          .vinyl-record.is-spinning {
+            animation: spin-vinyl 3s linear infinite;
+          }
+
+          .vinyl-record.is-paused {
+            animation: spin-vinyl 8s linear infinite;
+            opacity: 0.7;
+          }
+
+          /* Outer vinyl body — the black disc with grooves */
+          .vinyl-body {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+              radial-gradient(circle at center,
+                transparent 32%,
+                rgba(30, 30, 30, 0.6) 33%,
+                transparent 34%,
+                transparent 38%,
+                rgba(30, 30, 30, 0.4) 39%,
+                transparent 40%,
+                transparent 44%,
+                rgba(30, 30, 30, 0.3) 45%,
+                transparent 46%
+              ),
+              conic-gradient(
+                from 0deg,
+                #1a1a1a 0deg,
+                #2a2a2a 30deg,
+                #1a1a1a 60deg,
+                #222 90deg,
+                #1a1a1a 120deg,
+                #2a2a2a 150deg,
+                #1a1a1a 180deg,
+                #222 210deg,
+                #1a1a1a 240deg,
+                #2a2a2a 270deg,
+                #1a1a1a 300deg,
+                #222 330deg,
+                #1a1a1a 360deg
+              );
+            box-shadow:
+              0 2px 12px rgba(0,0,0,0.4),
+              inset 0 0 3px rgba(255,255,255,0.05);
+          }
+
+          /* Center label (album art area) */
+          .vinyl-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 52%;
+            height: 52%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            overflow: hidden;
+            background: #2a2a2a;
+            box-shadow:
+              0 0 0 2px rgba(60,60,60,0.8),
+              inset 0 0 8px rgba(0,0,0,0.5);
+          }
+
+          .vinyl-label img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          /* Center spindle hole */
+          .vinyl-spindle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8%;
+            height: 8%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, #f5ead8 40%, #c9b89a 100%);
+            box-shadow: inset 0 0 2px rgba(0,0,0,0.3);
+            z-index: 5;
+          }
+
+          /* Track info tooltip */
+          .vinyl-info {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 25, 20, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #f0e6d6;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            transform: translateX(-50%) translateY(4px);
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 100;
+          }
+
+          .vinyl-info .track-name {
+            font-weight: 700;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #FFB6C8;
+          }
+
+          .vinyl-info .track-artist {
+            font-weight: 400;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.8;
+            font-size: 0.62rem;
+          }
+
+          .vinyl-container:hover .vinyl-info {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+
+          /* Scrobbling indicator dot */
+          .vinyl-status {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            z-index: 10;
+            border: 2px solid #f5ead8;
+          }
+
+          .vinyl-status.live {
+            background: #4ade80;
+            box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+            animation: pulse-dot 2s ease-in-out infinite;
+          }
+
+          .vinyl-status.idle {
+            background: #a07060;
+            opacity: 0.6;
+          }
+
+          @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 4px rgba(74, 222, 128, 0.4); }
+            50% { box-shadow: 0 0 12px rgba(74, 222, 128, 0.8); }
+          }
+
+          @media (min-width: 768px) {
+            .vinyl-info {
+              font-size: 0.75rem;
+              max-width: 280px;
+            }
+            .vinyl-info .track-artist {
+              font-size: 0.65rem;
+            }
+          }
         `}</style>
       </head>
       <body>
@@ -300,7 +526,76 @@ export const homeRoute = new Elysia().get('/home', () => {
               })}
             </ul>
           </nav>
+
+          {/* Vinyl Record - Last.fm Now Playing */}
+          <div class="vinyl-container" id="vinyl-container">
+            <div class="vinyl-info" id="vinyl-info">
+              <span class="track-name" id="vinyl-track">{isPlaying ? trackName : 'Not playing'}</span>
+              <span class="track-artist" id="vinyl-artist">{isPlaying ? artistName : ''}</span>
+            </div>
+            <div class={`vinyl-status ${isPlaying ? 'live' : 'idle'}`} id="vinyl-status"></div>
+            <a href={nowPlaying?.url || '#'} target="_blank" rel="noopener noreferrer" id="vinyl-link" style="text-decoration:none;">
+              <div class={`vinyl-record ${isPlaying ? 'is-spinning' : 'is-paused'}`} id="vinyl-record">
+                <div class="vinyl-body"></div>
+                <div class="vinyl-label">
+                  <img
+                    src={initialArt}
+                    alt="Album art"
+                    id="vinyl-art"
+                    onerror="this.src='/public/images/noimage.png'"
+                  />
+                </div>
+                <div class="vinyl-spindle"></div>
+              </div>
+            </a>
+          </div>
         </main>
+
+        <script>{`
+          (function() {
+            const record = document.getElementById('vinyl-record');
+            const art = document.getElementById('vinyl-art');
+            const trackEl = document.getElementById('vinyl-track');
+            const artistEl = document.getElementById('vinyl-artist');
+            const statusEl = document.getElementById('vinyl-status');
+            const linkEl = document.getElementById('vinyl-link');
+
+            async function pollNowPlaying() {
+              try {
+                const res = await fetch('/api/nowplaying');
+                const data = await res.json();
+
+                if (data && data.isNowPlaying) {
+                  const newArt = data.albumArt || '/public/images/noimage.png';
+                  if (art.src !== newArt && !art.src.endsWith(newArt)) {
+                    art.src = newArt;
+                  }
+                  record.classList.remove('is-paused');
+                  record.classList.add('is-spinning');
+                  statusEl.classList.remove('idle');
+                  statusEl.classList.add('live');
+                  trackEl.textContent = data.name || 'Unknown';
+                  artistEl.textContent = data.artist || '';
+                  if (data.url) linkEl.href = data.url;
+                } else {
+                  art.src = '/public/images/noimage.png';
+                  record.classList.remove('is-spinning');
+                  record.classList.add('is-paused');
+                  statusEl.classList.remove('live');
+                  statusEl.classList.add('idle');
+                  trackEl.textContent = 'Not playing';
+                  artistEl.textContent = '';
+                  linkEl.href = '#';
+                }
+              } catch(e) {
+                console.error('Failed to poll now playing:', e);
+              }
+            }
+
+            // Poll every 15 seconds
+            setInterval(pollNowPlaying, 15000);
+          })();
+        `}</script>
       </body>
     </html>
   )

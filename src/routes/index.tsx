@@ -84,7 +84,6 @@ export const indexRoute = new Elysia().get('/', async ({ headers, query }) => {
           <span class="clickable"></span>
         </a>
         {'<!-- Try curl -L okashi.ceo -->'}
-        {'<!-- Try password generator https://okashi.ceo/password -->'}
         {'<!-- Telegram stickers https://t.me/addstickers/Watashichan -->'}
       </body>
     </html>

@@ -9,6 +9,7 @@ import { genshinRoute } from './routes/genshin'
 import { homeRoute } from './routes/home'
 import { indexRoute } from './routes/index'
 import { initCronJobs } from './utils/cron'
+import { getNowPlaying } from './utils/lastfm'
 
 const tw = await initTailwind()
 
@@ -19,6 +20,10 @@ const app = new Elysia()
   .use(html())
   .get('/public/styles.css', () => tw.response())
   .get('/favicon.ico', () => Bun.file('public/favicon.ico'))
+  .get('/api/nowplaying', async () => {
+    const track = await getNowPlaying()
+    return track
+  })
   .use(indexRoute)
   .use(homeRoute)
   .use(animeRoute)

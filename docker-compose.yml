@@ -1,0 +1,22 @@
+services:
+  okashi:
+    build:
+      context: .
+    container_name: okashi
+    restart: always
+    command: ["bun", "run", "src/main.ts"]
+    ports:
+      - "6967:3000"
+    environment:
+      - GENSHIN_COOKIE=${GENSHIN_COOKIE}
+      - GENSHIN_ROLE_ID=${GENSHIN_ROLE_ID}
+      - GENSHIN_SERVER=${GENSHIN_SERVER}
+      - LASTFM_API_KEY=${LASTFM_API_KEY}
+      - LASTFM_USERNAME=${LASTFM_USERNAME}
+      - LASTFM_CALLBACK=${LASTFM_CALLBACK}
+    networks:
+      - okashi-net
+
+networks:
+  okashi-net:
+    external: true

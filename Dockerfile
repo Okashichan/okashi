@@ -30,6 +30,7 @@ COPY --from=build /app/src ./src
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/tsconfig.json ./tsconfig.json
+COPY .env .env
 
 ENV NODE_ENV=production
 
