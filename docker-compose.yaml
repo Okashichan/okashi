@@ -1,8 +1,8 @@
 services:
-  okashi:
+  okashi-website:
     build:
       context: .
-    container_name: okashi
+    container_name: okashi-website
     restart: always
     command: ["bun", "run", "src/main.ts"]
     ports:
