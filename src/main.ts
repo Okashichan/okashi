@@ -10,6 +10,7 @@ import { homeRoute } from './routes/home'
 import { indexRoute } from './routes/index'
 import { initCronJobs } from './utils/cron'
 import { getNowPlaying } from './utils/lastfm'
+import { getLyrics } from './utils/lyrics'
 
 const tw = await initTailwind()
 
@@ -23,6 +24,15 @@ const app = new Elysia()
   .get('/api/nowplaying', async () => {
     const track = await getNowPlaying()
     return track ?? { isNowPlaying: false, albumArt: null }
+  })
+  .get('/api/lyrics', async ({ query }) => {
+    const track = typeof query.track === 'string' ? query.track : ''
+    const artist = typeof query.artist === 'string' ? query.artist : ''
+    if (!track || !artist) {
+      return { lyrics: null, instrumental: false }
+    }
+    const result = await getLyrics(track, artist)
+    return result
   })
   .use(indexRoute)
   .use(homeRoute)
