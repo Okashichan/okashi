@@ -22,7 +22,7 @@ const app = new Elysia()
   .get('/favicon.ico', () => Bun.file('public/favicon.ico'))
   .get('/api/nowplaying', async () => {
     const track = await getNowPlaying()
-    return track
+    return track ?? { isNowPlaying: false, albumArt: null }
   })
   .use(indexRoute)
   .use(homeRoute)

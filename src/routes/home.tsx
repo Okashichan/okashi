@@ -47,10 +47,11 @@ const konpeitoStyles = [
 export const homeRoute = new Elysia().get('/home', async () => {
   // Fetch initial now-playing data server-side
   const nowPlaying = await getNowPlaying()
-  const initialArt = nowPlaying?.albumArt || '/public/images/noimage.png'
   const isPlaying = nowPlaying?.isNowPlaying ?? false
-  const trackName = nowPlaying?.name || ''
-  const artistName = nowPlaying?.artist || ''
+  const initialArt = isPlaying && nowPlaying?.albumArt ? nowPlaying.albumArt : '/public/images/noimage.png'
+  const trackName = isPlaying ? (nowPlaying?.name || '') : ''
+  const artistName = isPlaying ? (nowPlaying?.artist || '') : ''
+  const trackUrl = isPlaying ? (nowPlaying?.url || '#') : '#'
 
   return (
     <html lang="uk">
@@ -534,7 +535,7 @@ export const homeRoute = new Elysia().get('/home', async () => {
               <span class="track-artist" id="vinyl-artist">{isPlaying ? artistName : ''}</span>
             </div>
             <div class={`vinyl-status ${isPlaying ? 'live' : 'idle'}`} id="vinyl-status"></div>
-            <a href={nowPlaying?.url || '#'} target="_blank" rel="noopener noreferrer" id="vinyl-link" style="text-decoration:none;">
+            <a href={trackUrl} target={isPlaying ? '_blank' : '_self'} rel="noopener noreferrer" id="vinyl-link" style="text-decoration:none;">
               <div class={`vinyl-record ${isPlaying ? 'is-spinning' : 'is-paused'}`} id="vinyl-record">
                 <div class="vinyl-body"></div>
                 <div class="vinyl-label">
@@ -563,7 +564,9 @@ export const homeRoute = new Elysia().get('/home', async () => {
             async function pollNowPlaying() {
               try {
                 const res = await fetch('/api/nowplaying');
-                const data = await res.json();
+                if (!res.ok) throw new Error('API error: ' + res.status);
+                const text = await res.text();
+                const data = text ? JSON.parse(text) : null;
 
                 if (data && data.isNowPlaying) {
                   const newArt = data.albumArt || '/public/images/noimage.png';
@@ -576,7 +579,8 @@ export const homeRoute = new Elysia().get('/home', async () => {
                   statusEl.classList.add('live');
                   trackEl.textContent = data.name || 'Unknown';
                   artistEl.textContent = data.artist || '';
-                  if (data.url) linkEl.href = data.url;
+                  linkEl.href = data.url || '#';
+                  linkEl.target = '_blank';
                 } else {
                   art.src = '/public/images/noimage.png';
                   record.classList.remove('is-spinning');
@@ -586,6 +590,7 @@ export const homeRoute = new Elysia().get('/home', async () => {
                   trackEl.textContent = 'Not playing';
                   artistEl.textContent = '';
                   linkEl.href = '#';
+                  linkEl.target = '_self';
                 }
               } catch(e) {
                 console.error('Failed to poll now playing:', e);
